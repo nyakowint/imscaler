@@ -22,8 +22,16 @@ jobs:
       - name: Get package info
         id: package
         run: |
-          PACKAGE_NAME=$(cat package/package.json | grep '"name"' | sed -E 's/.*"name": "([^"]+)".*/\1/')
+          PACKAGE_NAME=$(node -p "require('./VRChatImmersiveScaler/package.json').name.replace(/_/g, '-')")
+          VERSION=${{ inputs.version }}
+          TAG=$VERSION
+          if [[ "$TAG" != v* ]]; then
+            TAG="v$TAG"
+          fi
+          VERSION_NUMBER=${VERSION#v}
           echo "name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version_number=$VERSION_NUMBER" >> $GITHUB_OUTPUT
       
       - name: Trigger VPM Update
         uses: peter-evans/repository-dispatch@v3
@@ -34,5 +42,5 @@ jobs:
           client-payload: |
             {
               "package_name": "${{ steps.package.outputs.name }}", 
-              "release_url": "https://github.com/${{ github.repository }}/releases/download/${{ inputs.version }}/${{ steps.package.outputs.name }}-${{ inputs.version }}.zip"
+              "release_url": "https://github.com/${{ github.repository }}/releases/download/${{ steps.package.outputs.tag }}/${{ steps.package.outputs.name }}-${{ steps.package.outputs.version_number }}.zip"
             }

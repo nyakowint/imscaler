@@ -1,6 +1,6 @@
 # VRChat Immersive Scaler for Unity
 
-An NDMF-based Unity tool that provides the same powerful avatar scaling capabilities as the Blender Immersive Scaler addon, directly within Unity. This tool helps VRChat users properly scale their avatars to match real-world proportions and maintain immersion in VR, with automatic ViewPosition adjustment.
+An NDMF-based Unity 2022 tool that provides the same powerful avatar scaling capabilities as the Blender Immersive Scaler addon, directly within Unity. This package targets Unity 2022.3.22f1 with VRChat SDK Avatars 3.10.3 and NDMF 1.13.0.
 
 ## Features
 
@@ -20,6 +20,10 @@ An NDMF-based Unity tool that provides the same powerful avatar scaling capabili
   - Hip bone adjustment
   - Center avatar at origin
   - Move avatar to floor
+- **Measurement Controls**:
+  - Renderer override lists for separate body/head meshes
+  - Mesh outlier filtering for hidden props and bad bounds
+  - Bone-based floor fallback for avatars with unreliable mesh bounds
 
 ## Installation
 
@@ -32,10 +36,11 @@ An NDMF-based Unity tool that provides the same powerful avatar scaling capabili
 
 ## Requirements
 
-- Unity 2019.4 or newer (VRChat's supported version)
+- Unity 2022.3.22f1
 - Avatar must have a Humanoid rig configuration
-- VRChat SDK3 Avatars (required)
-- NDMF (required for build-time processing)
+- VRChat SDK3 Avatars 3.10.3, constrained to the 3.10.x line
+- NDMF 1.13.0 or newer, constrained to the 1.x line
+- Modular Avatar is optional. When installed, the NDMF pass runs after it so merged armatures are already prepared.
 
 ## Usage
 
@@ -68,6 +73,7 @@ An NDMF-based Unity tool that provides the same powerful avatar scaling capabili
 #### Advanced Modes
 - **Scale by Relative Proportions**: Use arm/leg ratio instead of upper body percentage
 - **Keep Head Size**: Maintain head size by scaling the torso
+- **Measurement Renderer Overrides**: Limit body/head measurement to selected renderers when accessories or props have unreliable bounds
 
 ### Getting Current Values
 
@@ -97,7 +103,7 @@ The tool uses the same algorithms as the original Blender addon, now with NDMF i
 1. **Measures** your avatar's current proportions
 2. **Calculates** the necessary scaling to achieve VRChat-compatible proportions
 3. **Applies** non-uniform scaling to different body parts during build
-4. **Updates** VRChat's ViewPosition to match the scaled eye height
+4. **Updates** VRChat's ViewPosition from the measured final local eye position while preserving any intentional descriptor offset
 5. **Maintains** VRChat's IK system compatibility
 
 The scaling preserves VRChat's head-to-hand distance measurement while adjusting your avatar to match your real proportions. Most importantly, it automatically calculates and updates the ViewPosition based on how the scaling affects your avatar's eye height.

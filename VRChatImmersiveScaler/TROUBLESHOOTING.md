@@ -7,13 +7,13 @@
 This is often caused by incorrect scale calculations or bone orientation issues. Here's how to debug:
 
 1. **Enable Debug Logging**
-   - The tool now includes extensive debug logging
-   - Check the Unity Console for log messages starting with "ScaleLegs" and "ScaleArms"
-   - Look for extreme values (very small or very large scale ratios)
+   - Add `KITTYN_IMMERSIVE_SCALER_DEBUG` to Unity's scripting define symbols when you need detailed scale logs
+   - Check the Unity Console for messages from "ImmersiveScaler"
+   - Look for extreme values, warnings about invalid measurements, or scale ratios that were clamped
 
 2. **Check Bone Directions**
    - The tool automatically detects bone directions
-   - Console logs will show detected directions for each bone
+   - Debug logging can show detected directions for each bone
    - Most humanoid rigs have bones extending along local Y axis
    - Some rigs may use different axes
 
@@ -45,6 +45,7 @@ This is often caused by incorrect scale calculations or bone orientation issues.
 
 3. **Review Console Output**
    - Look for messages about missing bones
+   - Look for warnings about invalid current/target height, NaN values, or clamped ratios
    - Check calculated values for reasonableness:
      - LegScaleRatio should typically be between 0.5 and 2.0
      - Thickness values should be between 0.1 and 1.0
@@ -69,14 +70,15 @@ This is often caused by incorrect scale calculations or bone orientation issues.
    - Top of head includes hair/accessories which may throw off calculations
 
 2. **Check Mesh Bounds**
-   - Tool uses mesh bounds for height calculations
-   - Accessories or clothing may extend beyond body
-   - Try hiding non-body meshes temporarily
+   - Tool prefers humanoid body meshes (legs/hips) for floor/height measurements and ignores obvious outlier bounds
+   - If a prop is still affecting measurements, enable "Measurement Overrides" on the component and assign only your body/head meshes
+   - If you still have issues, enable "Use bone-based floor calculation" (Debug Options) and/or fix incorrect `SkinnedMeshRenderer` bounds on your avatar meshes
+   - Props/weapons with large bounds can still cause problems if they are merged into the main body mesh
 
 ### Debug Information
 
 When reporting issues, please include:
-1. Console log output (especially lines with "ScaleLegs", "ScaleArms", "Current measurements")
+1. Console log output, especially warnings and any `KITTYN_IMMERSIVE_SCALER_DEBUG` logs
 2. Avatar source (where it's from, how it was imported)
 3. Current measurement values shown in the tool
 4. Which settings you're using
@@ -111,5 +113,5 @@ When reporting issues, please include:
 If you continue to have issues:
 1. Save your Unity project
 2. Take screenshots of the tool settings and console output
-3. Note your Unity version and VRChat SDK version
+3. Note your Unity version and VRChat SDK version. This package is maintained for Unity 2022.3.22f1, VRChat SDK Avatars 3.10.3, and NDMF 1.13.0.
 4. Create an issue on GitHub with all this information

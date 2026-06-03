@@ -1,4 +1,3 @@
-using System.Reflection;
 using nadena.dev.ndmf;
 using UnityEngine;
 using UnityEditor;
@@ -11,11 +10,25 @@ namespace VRChatImmersiveScaler.Editor
     public class ImmersiveScalerPlugin : Plugin<ImmersiveScalerPlugin>
     {
         public override string QualifiedName => "com.vrchat.immersivescaler";
-        public override string DisplayName => "VRChat Immersive Scaler";
+        public override string DisplayName => "🐟 Immersive Scaler 📐📏🎨";
+
+        private static void LogDebug(string message)
+        {
+#if KITTYN_IMMERSIVE_SCALER_DEBUG
+            Debug.Log(message);
+#endif
+        }
         
         protected override void Configure()
         {
             InPhase(BuildPhase.Transforming)
+                // If this runs before armature merge tools (e.g. Modular Avatar Merge Armature),
+                // those tools may rewrite bindposes to preserve the outfit's *current* appearance and
+                // effectively cancel out the scaling we apply to humanoid bones.
+                //
+                // Running after MA ensures merged/retargeted outfits are already bound to the avatar armature,
+                // so they receive the same bone scaling as the base body.
+                .AfterPlugin("nadena.dev.modular-avatar")
                 .Run("Apply Immersive Scaling", ctx =>
                 {
                     var component = ctx.AvatarRootTransform.GetComponentInChildren<ImmersiveScalerComponent>(true);
@@ -29,26 +42,20 @@ namespace VRChatImmersiveScaler.Editor
                         return;
                     }
                     
-                    // Store original ViewPosition if not already stored
-                    if (!component.hasStoredOriginalViewPosition)
-                    {
-                        component.originalViewPosition = descriptor.ViewPosition;
-                        component.hasStoredOriginalViewPosition = true;
-                    }
+                    Vector3 buildStartViewPosition = descriptor.ViewPosition;
                     
-                    Debug.Log($"ImmersiveScaler: Starting scaling process. Target height: {component.targetHeight}m");
+                    LogDebug($"ImmersiveScaler: Starting scaling process. Target height: {component.targetHeight}m");
                     
                     // Create scaling core
                     var scalerCore = new ImmersiveScalerCore(ctx.AvatarRootTransform.gameObject);
+                    scalerCore.SetMeasurementRendererOverrides(
+                        component.useMeasurementRendererOverrides,
+                        component.measurementBodyRenderers,
+                        component.measurementHeadRenderers
+                    );
                     
                     // Measure original eye height and position
-                    float originalEyeHeight = scalerCore.GetEyeHeight();
-                    float originalLowestPoint = scalerCore.GetLowestPoint();
-                    float originalAvatarHeight = originalEyeHeight - originalLowestPoint;
                     Vector3 originalEyeLocalPos = scalerCore.GetEyePositionLocal();
-                    
-                    // Store original avatar scale
-                    Vector3 originalAvatarScale = ctx.AvatarRootTransform.localScale;
                     
                     // Create parameters from component
                     var parameters = new ScalingParameters
@@ -84,49 +91,40 @@ namespace VRChatImmersiveScaler.Editor
                     scalerCore.ScaleAvatar(parameters);
                     
                     // Measure new eye position after scaling
-                    float newEyeHeight = scalerCore.GetEyeHeight();
-                    float newLowestPoint = scalerCore.GetLowestPoint();
                     Vector3 newEyeLocalPos = scalerCore.GetEyePositionLocal();
                     
-                    // Calculate the actual scale ratio applied to the avatar
-                    Vector3 newAvatarScale = ctx.AvatarRootTransform.localScale;
-                    float scaleRatio = newAvatarScale.y / originalAvatarScale.y;
-                    
-                    // Update ViewPosition to match the new eye position
-                    Vector3 newViewPosition = descriptor.ViewPosition;
-                    
-                    // The ViewPosition is in local space relative to the avatar root
-                    // Scale the ViewPosition proportionally with the avatar scale
                     if (!component.skipMainRescale || !component.skipHeightScaling)
                     {
-                        // Scale the ViewPosition by the same ratio as the avatar
-                        newViewPosition = component.originalViewPosition * scaleRatio;
+                        // Preserve any intentional ViewPosition offset from eye bones while using
+                        // the measured final local eye position instead of root-scale approximation.
+                        Vector3 newViewPosition = newEyeLocalPos + (buildStartViewPosition - originalEyeLocalPos);
                         
                         descriptor.ViewPosition = newViewPosition;
                         EditorUtility.SetDirty(descriptor);
                         
                         // Enhanced debug logging
-                        Debug.Log($"ImmersiveScaler: ViewPosition Update Details:");
-                        Debug.Log($"  Original ViewPosition: {component.originalViewPosition}");
-                        Debug.Log($"  New ViewPosition: {newViewPosition}");
-                        Debug.Log($"  Eye Position (Local Space) - Before: {originalEyeLocalPos}, After: {newEyeLocalPos}");
-                        Debug.Log($"  Eye Movement Delta (Local): {newEyeLocalPos - originalEyeLocalPos}");
-                        Debug.Log($"  Eye Height (World) - Before: {originalEyeHeight:F3}, After: {newEyeHeight:F3}");
+#if KITTYN_IMMERSIVE_SCALER_DEBUG
+                        LogDebug($"ImmersiveScaler: ViewPosition Update Details:");
+                        LogDebug($"  Original ViewPosition: {buildStartViewPosition}");
+                        LogDebug($"  New ViewPosition: {newViewPosition}");
+                        LogDebug($"  Eye Position (Local Space) - Before: {originalEyeLocalPos}, After: {newEyeLocalPos}");
+                        LogDebug($"  Eye Movement Delta (Local): {newEyeLocalPos - originalEyeLocalPos}");
+#endif
                     }
                     
-                    Debug.Log($"ImmersiveScaler: Scaling complete. Final height: {scalerCore.GetHighestPoint() - scalerCore.GetLowestPoint():F3}m");
+                    LogDebug($"ImmersiveScaler: Scaling complete. Final height: {scalerCore.GetHighestPoint() - scalerCore.GetLowestPoint(component.useBoneBasedFloorCalculation):F3}m");
                     
                     // Apply additional tools if enabled
                     if (component.applyFingerSpreading)
                     {
-                        Debug.Log($"ImmersiveScaler: Applying finger spreading with factor {component.fingerSpreadFactor}");
+                        LogDebug($"ImmersiveScaler: Applying finger spreading with factor {component.fingerSpreadFactor}");
                         ImmersiveScalerFingerUtility.SpreadFingers(ctx.AvatarRootTransform.gameObject, 
                             component.fingerSpreadFactor, component.spareThumb);
                     }
                     
                     if (component.applyShrinkHipBone)
                     {
-                        Debug.Log("ImmersiveScaler: Applying hip bone fix");
+                        LogDebug("ImmersiveScaler: Applying hip bone fix");
                         ApplyHipBoneFix(ctx.AvatarRootTransform.gameObject);
                     }
                     

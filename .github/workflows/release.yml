@@ -92,7 +92,7 @@ jobs:
         run: |
           # Create package directory structure
           mkdir -p package
-          cp -r VRChatImmersiveScaler/* package/
+          cp -r VRChatImmersiveScaler/. package/
           
           # Read version and name from package.json
           VERSION=$(cat VRChatImmersiveScaler/package.json | grep '"version"' | head -1 | cut -d '"' -f 4)
@@ -113,6 +113,11 @@ jobs:
           
           # Create version-less copy
           cp "${PACKAGE_NAME_HYPHEN}-${VERSION}.zip" "${PACKAGE_NAME_HYPHEN}.zip"
+
+          # Verify the zip's package manifest matches the repository source manifest.
+          unzip -p "${PACKAGE_NAME_HYPHEN}-${VERSION}.zip" package.json > package.json.fromzip
+          diff -u VRChatImmersiveScaler/package.json package.json.fromzip
+          rm package.json.fromzip
           
           echo "Created packages:"
           echo "  - ${PACKAGE_NAME_HYPHEN}-${VERSION}.zip (versioned)"
@@ -128,16 +133,23 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   
   update-main-vpm:
-    needs: release
+    needs: build-package
     name: Update Main VPM Repository
     runs-on: ubuntu-latest
     if: github.event_name == 'release' && github.event.action == 'published'
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Get version from tag
         id: get_version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/}
+          TAG=${GITHUB_REF_NAME}
+          VERSION=${TAG#v}
+          PACKAGE_NAME=$(node -p "require('./VRChatImmersiveScaler/package.json').name.replace(/_/g, '-')")
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
       
       - name: Trigger VPM Update
         uses: peter-evans/repository-dispatch@v3
@@ -145,4 +157,4 @@ jobs:
           token: ${{ secrets.KITTYN_VPM_TOKEN }}
           repository: kittynXR/kittyn-vpm
           event-type: update-package
-          client-payload: '{"package_name": "cat.kittyn.immersive-scaler", "release_url": "https://github.com/${{ github.repository }}/releases/download/${{ steps.get_version.outputs.version }}/cat.kittyn.immersive-scaler-${{ steps.get_version.outputs.version }}.zip"}'
+          client-payload: '{"package_name": "${{ steps.get_version.outputs.package_name }}", "release_url": "https://github.com/${{ github.repository }}/releases/download/${{ steps.get_version.outputs.tag }}/${{ steps.get_version.outputs.package_name }}-${{ steps.get_version.outputs.version }}.zip"}'

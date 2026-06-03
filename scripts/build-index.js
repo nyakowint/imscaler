@@ -1,52 +1,59 @@
 const fs = require('fs');
-const path = require('path');
 
-// Read package.json to get version
-const packageJson = JSON.parse(fs.readFileSync('VRChatImmersiveScaler/package.json', 'utf8'));
+const PACKAGE_PATH = 'VRChatImmersiveScaler/package.json';
+const INDEX_PATH = 'index.json';
+const DEFAULT_REPOSITORY = 'kittynXR/imscaler';
 
-// Try to read existing index.json to preserve previous versions
-let existingVersions = {};
-if (fs.existsSync('index.json')) {
+function readJson(path) {
+  return JSON.parse(fs.readFileSync(path, 'utf8'));
+}
+
+function writeJson(path, value) {
+  fs.writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function getReleaseUrl(pkg) {
+  const repository = process.env.GITHUB_REPOSITORY || DEFAULT_REPOSITORY;
+  const zipName = `${pkg.name.replace(/_/g, '-')}-${pkg.version}.zip`;
+  return `https://github.com/${repository}/releases/download/v${pkg.version}/${zipName}`;
+}
+
+const packageJson = readJson(PACKAGE_PATH);
+const packageName = packageJson.name;
+
+let listing = {
+  name: 'Immersive Scaler VRChat Tools',
+  author: 'kittyn cat',
+  url: 'https://immersive-scaler.kittyn.cat/index.json',
+  id: 'cat.kittyn.vpm',
+  packages: {}
+};
+
+if (fs.existsSync(INDEX_PATH)) {
   try {
-    const existingIndex = JSON.parse(fs.readFileSync('index.json', 'utf8'));
-    if (existingIndex.packages?.['cat.kittyn.immersive-scaler']?.versions) {
-      existingVersions = existingIndex.packages['cat.kittyn.immersive-scaler'].versions;
-      console.log(`Found ${Object.keys(existingVersions).length} existing versions`);
-    }
+    const existingIndex = readJson(INDEX_PATH);
+    listing = {
+      ...listing,
+      ...existingIndex,
+      packages: existingIndex.packages || {}
+    };
   } catch (error) {
-    console.warn('Could not parse existing index.json:', error);
+    console.warn(`Could not parse ${INDEX_PATH}:`, error);
   }
 }
 
-// Add/update current version
-existingVersions[packageJson.version] = {
-  "name": "cat.kittyn.immersive-scaler",
-  "displayName": "VRChat Immersive Scaler",
-  "version": packageJson.version,
-  "unity": "2022.3",
-  "description": "A Unity Editor tool for properly scaling VRChat avatars to match real-world proportions while maintaining VR immersion.",
-  "author": {
-    "name": "kittyn cat",
-    "email": "",
-    "url": "https://github.com/kittynXR"
-  },
-  "url": `https://github.com/${process.env.GITHUB_REPOSITORY || 'kittynXR/imscaler'}/releases/download/v${packageJson.version}/cat.kittyn.immersive-scaler-${packageJson.version}.zip`,
-  "licenseUrl": "https://github.com/kittynXR/imscaler/LICENSE"
+const packageListing = listing.packages[packageName] || { versions: {} };
+packageListing.versions = packageListing.versions || {};
+
+packageListing.versions[packageJson.version] = {
+  ...packageJson,
+  url: getReleaseUrl(packageJson)
 };
 
-// Create the listing structure with all versions
-const listing = {
-  "name": "Immersive Scaler VRChat Tools",
-  "author": "kittyn cat",
-  "url": "https://immersive-scaler.kittyn.cat/index.json",
-  "id": "cat.kittyn.vpm",
-  "packages": {
-    "cat.kittyn.immersive-scaler": {
-      "versions": existingVersions
-    }
-  }
-};
+listing.packages[packageName] = packageListing;
 
-// Write index.json
-fs.writeFileSync('index.json', JSON.stringify(listing, null, 2));
-console.log(`Generated index.json with version ${packageJson.version} (total versions: ${Object.keys(existingVersions).length})`);
+writeJson(INDEX_PATH, listing);
+console.log(
+  `Generated ${INDEX_PATH} with ${packageName} ${packageJson.version} ` +
+  `(total versions: ${Object.keys(packageListing.versions).length})`
+);

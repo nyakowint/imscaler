@@ -2,75 +2,57 @@
 
 ## What's Changed
 
-The Immersive Scaler has been updated to work as an NDMF (Non-Destructive Modular Framework) component instead of an Editor Window. This provides better VRChat integration and ensures the ViewPosition is properly scaled.
+Immersive Scaler is maintained as an NDMF component for Unity 2022.3.22f1. The legacy window remains available for manual/destructive testing, but the component workflow is the supported path for VRChat avatar builds.
 
 ## Key Improvements
 
-1. **Non-Destructive**: Scaling is applied during avatar build/upload, not permanently to your project
-2. **ViewPosition Scaling**: Automatically updates VRChat's ViewPosition to match the scaled avatar
-3. **VRChat Integration**: Works seamlessly with VRChat's build pipeline
-4. **Preview Support**: Can preview changes before building
+1. Non-destructive scaling is applied during avatar build/upload.
+2. ViewPosition is updated from the measured final local eye position while preserving the user's original descriptor offset.
+3. Measurement renderer overrides can ignore hidden props, accessories, or meshes with bad bounds.
+4. Mesh outlier filtering and bone-based floor fallback reduce bad hidden-collider style measurements.
+5. The build pass runs after Modular Avatar when it is installed, without requiring Modular Avatar as a package dependency.
 
-## How to Use the New System
+## Supported Stack
 
-### 1. Remove Old Window-Based Files
-Delete the old ImmersiveScalerWindow.cs if you have it in your project.
+- Unity 2022.3.22f1
+- VRChat SDK Avatars >=3.10.3 <3.11.0-a
+- NDMF >=1.13.0 <2.0.0-a
 
-### 2. Add the Component
-1. Select your VRChat avatar (must have VRCAvatarDescriptor)
-2. Add Component → VRChat → Immersive Scaler
-3. Configure your scaling parameters in the component
+## How to Use the Component
 
-### 3. Configure Settings
-The component has the same settings as the old window:
-- Target Height
-- Upper Body Percentage
-- Arm/Leg Thickness
-- etc.
-
-### 4. Preview (Optional)
-- Click "Preview Scaling" to see changes in the editor
-- Click "Reset Preview" to undo preview changes
-- Note: Preview is just for testing - actual scaling happens at build time
-
-### 5. Build/Upload
-Simply build and upload your avatar as normal. The scaling will be applied automatically during the build process.
+1. Select your VRChat avatar with a `VRCAvatarDescriptor`.
+2. Add Component -> VRChat -> Immersive Scaler.
+3. Click "Get Current" to populate values from the avatar.
+4. Enable measurement renderer overrides if props or bad mesh bounds affect the displayed stats.
+5. Use Preview Scaling to inspect changes in the editor.
+6. Build/upload normally; NDMF applies the scaling during the avatar build.
 
 ## Important Notes
 
 ### ViewPosition Updates
-The new system automatically calculates and updates the VRChat ViewPosition based on how the scaling affects eye height. This ensures your in-VR viewpoint matches your scaled avatar.
+
+Build-time processing reads the current descriptor ViewPosition at build start. It no longer treats the serialized `originalViewPosition` fields on old components as long-lived source data; those legacy fields are kept only for compatibility.
 
 ### Non-Destructive Workflow
-- Your original avatar is never permanently modified
-- Scaling only applies during the build process
-- You can adjust settings and rebuild without accumulating changes
 
-### Bone Scaling
-The bone-by-bone scaling approach is preserved, but now includes:
-- Automatic bone direction detection
-- Better handling of different rig configurations
-- Clamped values to prevent extreme scaling
+- Your source avatar is not permanently modified by the component workflow.
+- Scaling applies during build.
+- Preview changes restore transforms and ViewPosition when cancelled.
+
+### Legacy Window
+
+The Tools window is still available for legacy/manual workflows. It can make destructive changes to the scene avatar, so duplicate the avatar first if you use it outside preview mode.
 
 ## Troubleshooting
 
 ### "No VRCAvatarDescriptor found" Error
-Make sure the component is on a GameObject that has a VRCAvatarDescriptor component in its parents.
+
+Make sure the component is on the avatar or on a child under a GameObject with a `VRCAvatarDescriptor`.
 
 ### Scaling Not Applied
-Ensure you have NDMF installed in your project. The scaling is applied during build, not in the editor (unless you use Preview).
 
-### ViewPosition Issues
-The system automatically calculates the correct ViewPosition. If it seems wrong:
-1. Check that your avatar's eye bones are properly configured
-2. Try using "Scale to Eyes" option for more accurate viewpoint
-3. Use Preview to test before building
+Ensure NDMF is installed and the avatar build is using the SDK build pipeline. The component workflow applies at build time, not while idle in the editor.
 
-## Reverting to Old System
+### Measurement Looks Wrong
 
-If you need to use the old window-based system:
-1. Keep the old ImmersiveScalerWindow.cs
-2. Don't add the ImmersiveScalerComponent
-3. Use the window as before (VRChat menu → Immersive Scaler)
-
-Note: The old system won't automatically update ViewPosition, so you'll need to adjust it manually after scaling.
+Use measurement renderer overrides for separate body/head meshes, hidden accessories, or imported props with incorrect bounds. If the floor is still wrong, try the bone-based floor calculation option.

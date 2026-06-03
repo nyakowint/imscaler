@@ -1,16 +1,17 @@
 # VRChat Immersive Scaler
 
-A Unity tool for properly scaling VRChat avatars to match real-world proportions while maintaining VR immersion. Features NDMF integration for non-destructive avatar modifications.
+A Unity 2022 tool for scaling VRChat avatars to match real-world proportions while maintaining VR immersion. It uses NDMF for non-destructive build-time avatar modifications.
 
 If you just want to scale your arms and legs, there's an easier way to do it in-game with Limb Scaler by nanochip:  https://x.com/xNanochip/status/1989030705850949650
 
-This works fine, but if you have any hidden colliders outside your avatar's bounds then it might scale you incorrectly.  Working on a fix soon tm.
+Immersive Scaler also includes renderer-based measurement overrides and mesh outlier filtering for avatars with hidden props, bad bounds, or separate head/body meshes.
 
 > **Note**: The exact IK measurement parameters VRChat uses internally are not fully documented. The current defaults are based on community research and testing. We'll update with firm defaults and bump the version once the exact parameters are confirmed.
 
 [![VCC Compatible](https://img.shields.io/badge/VCC-Compatible-green)](https://vcc.docs.vrchat.com)
-[![Unity 2019.4+](https://img.shields.io/badge/Unity-2019.4+-blue)](https://unity.com)
-[![NDMF Compatible](https://img.shields.io/badge/NDMF-Compatible-purple)](https://github.com/bdunderscore/ndmf)
+[![Unity 2022.3.22f1](https://img.shields.io/badge/Unity-2022.3.22f1-blue)](https://creators.vrchat.com/sdk/upgrade/current-unity-version/)
+[![VRC SDK Avatars 3.10.3](https://img.shields.io/badge/VRC%20SDK%20Avatars-3.10.3-blueviolet)](https://vcc.docs.vrchat.com/)
+[![NDMF 1.13.0](https://img.shields.io/badge/NDMF-1.13.0-purple)](https://github.com/bdunderscore/ndmf)
 
 ## 🚀 Quick Install
 
@@ -30,8 +31,8 @@ https://immersive-scaler.kittyn.cat/index.json
 ### Core Scaling Features
 - ✅ **Automated Avatar Scaling** - One-click scaling to match your real height
 - ✅ **VRChat IK Compatibility** - Maintains proper VRChat IK measurements
-- ✅ **Automatic ViewPosition** - Maintains correct eye position after scaling
-- ✅ **Non-Destructive** - Unity version uses NDMF for build-time processing
+- ✅ **Automatic ViewPosition** - Reconciles the final measured eye position after scaling
+- ✅ **Non-Destructive** - Uses NDMF for build-time processing
 
 ### Customization Options
 - 🎯 Upper body vs lower body ratio adjustment
@@ -42,6 +43,7 @@ https://immersive-scaler.kittyn.cat/index.json
 
 ### Advanced Features
 - 🔧 Multiple measurement methods (eye height, total height, various arm measurements)
+- 🔧 Optional body/head renderer overrides for difficult mesh bounds
 - 🔧 Visual measurement gizmos for debugging
 - 🔧 Finger spreading for better controller tracking
 - 🔧 Hip bone adjustment tool
@@ -54,9 +56,9 @@ https://immersive-scaler.kittyn.cat/index.json
 
 ## 📋 Requirements
 
-- Unity 2019.4 or newer (VRChat's supported version)
-- VRChat SDK3 Avatars
-- [NDMF (Non-Destructive Modular Framework)](https://github.com/bdunderscore/ndmf) - installed automatically if using VCC
+- Unity 2022.3.22f1, matching the current VRChat target for this package
+- VRChat SDK3 Avatars 3.10.3 or newer within the 3.10.x line
+- [NDMF (Non-Destructive Modular Framework)](https://github.com/bdunderscore/ndmf) 1.13.0 or newer within the 1.x line
 - Avatar with Humanoid rig configuration
 
 ## 🛠️ Usage
@@ -101,6 +103,7 @@ https://immersive-scaler.kittyn.cat/index.json
 **Avatar shrinks unexpectedly**
 - Click "Get Current" before making adjustments
 - Ensure you're using the correct measurement methods
+- Enable measurement renderer overrides if hidden props or bad mesh bounds affect stats
 
 **Preview doesn't match final result**
 - Make sure all bones are properly mapped
@@ -136,7 +139,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 📞 Support
 
 - **Issues**: [GitHub Issues](https://github.com/kittynXR/imscaler/issues)
-- **Discord**: Coming soon
 - **Documentation**: [Full Documentation](VRChatImmersiveScaler/README.md)
 
 ---

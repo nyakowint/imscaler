@@ -77,8 +77,13 @@ sed -i "s/download\/v$CURRENT_VERSION\/cat.kittyn.immersive-scaler-$CURRENT_VERS
 # Create the zip package
 print_info "Creating release package..."
 cd VRChatImmersiveScaler
-zip -r ../cat.kittyn.immersive-scaler-$NEW_VERSION.zip . -x "*.meta" -x ".git/*" -x ".DS_Store"
+zip -r ../cat.kittyn.immersive-scaler-$NEW_VERSION.zip . -x ".git/*" -x ".DS_Store"
 cd ..
+
+# Verify the package manifest inside the zip matches the source manifest.
+unzip -p cat.kittyn.immersive-scaler-$NEW_VERSION.zip package.json > package.json.fromzip
+diff -u VRChatImmersiveScaler/package.json package.json.fromzip
+rm package.json.fromzip
 
 # Create version-less copy
 print_info "Creating version-less copy..."

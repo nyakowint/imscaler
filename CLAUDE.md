@@ -28,12 +28,13 @@ VRChat Immersive Scaler is a Unity Editor tool that scales VRChat avatars to mat
 - This is a Unity package, not a standalone application
 - No traditional build/test commands - functionality is tested within Unity Editor
 - Assembly definitions (`.asmdef` files) separate Editor and Runtime code
-- Requires Unity 2019.4+ (VRChat's version)
+- Targets Unity 2022.3.22f1 exclusively for the maintained package
 
 ### Dependencies
 
-- `nadena.dev.ndmf`: ^1.0.0 - Required for build-time processing
-- `com.vrchat.avatars`: ^3.0.0 - VRChat SDK for avatar descriptors
+- `nadena.dev.ndmf`: >=1.13.0 <2.0.0-a - Required for build-time processing
+- `com.vrchat.avatars`: >=3.10.3 <3.11.0-a - VRChat SDK for avatar descriptors
+- Modular Avatar is optional; the NDMF pass declares ordering after `nadena.dev.modular-avatar` without requiring its runtime assembly.
 
 ### Code Organization
 
@@ -53,10 +54,11 @@ VRChat Immersive Scaler is a Unity Editor tool that scales VRChat avatars to mat
 ### ViewPosition Handling
 
 The tool automatically adjusts VRChat's ViewPosition after scaling:
-1. Measures original eye height before scaling
-2. Applies scaling transformations
-3. Calculates new eye height
-4. Updates VRCAvatarDescriptor.ViewPosition to maintain correct viewpoint
+1. Reads the descriptor ViewPosition at preview/build start
+2. Measures original local eye position before scaling
+3. Applies scaling transformations
+4. Measures the final local eye position
+5. Updates VRCAvatarDescriptor.ViewPosition while preserving the user's original descriptor offset from the eye bones
 
 ### Testing Workflow
 

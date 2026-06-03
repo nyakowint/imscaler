@@ -1,26 +1,31 @@
 {
   "name": "cat.kittyn.immersive-scaler",
-  "version": "1.0.10",
-  "displayName": "VRChat Immersive Scaler",
-  "description": "A Unity Editor tool for properly scaling VRChat avatars to match real-world proportions while maintaining VR immersion.",
+  "displayName": "🐟 Immersive Scaler 📐📏🎨",
+  "version": "1.5.0",
   "unity": "2022.3",
+  "unityRelease": "22f1",
+  "description": "A non-destructive Unity editor tool for scaling VRChat avatars to real-world proportions.",
+  "type": "Avatar",
   "author": {
-    "name": "kittyn cat",
-    "email": "",
+    "name": "kittyn",
+    "email": "cat@kittyn.cat",
     "url": "https://github.com/kittynXR"
   },
-  "url": "https://github.com/kittynXR/imscaler/releases/download/v1.0.10/cat.kittyn.immersive-scaler-1.0.10.zip",
+  "license": "MIT",
+  "licenseUrl": "https://github.com/kittynXR/imscaler/blob/main/LICENSE",
+  "licensesUrl": "https://github.com/kittynXR/imscaler/blob/main/LICENSE",
+  "changelogUrl": "https://github.com/kittynXR/imscaler/releases",
+  "documentationUrl": "https://github.com/kittynXR/imscaler#readme",
+  "dependencies": {},
+  "vpmDependencies": {
+    "com.vrchat.avatars": ">=3.10.3 <3.11.0-a",
+    "nadena.dev.ndmf": ">=1.13.0 <2.0.0-a"
+  },
   "keywords": [
     "vrchat",
-    "avatar",
-    "scaling",
-    "vr",
-    "immersive",
-    "ndmf"
+    "unity",
+    "tool"
   ],
-  "vpmDependencies": {
-    "nadena.dev.ndmf": "^1.0.0",
-    "com.vrchat.avatars": "^3.0.0"
-  },
-  "license": "MIT"
+  "url": "https://github.com/kittynXR/imscaler/releases/download/v1.5.0/cat.kittyn.immersive-scaler-1.5.0.zip",
+  "samples": []
 }

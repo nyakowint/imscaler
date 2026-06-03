@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 #if VRC_SDK_VRCSDK3
 using VRC.SDKBase;
@@ -32,7 +33,7 @@ namespace VRChatImmersiveScaler
         AlternateUpperBody
     }
     
-    [AddComponentMenu("VRChat/Immersive Scaler")]
+    [AddComponentMenu("VRChat/🐟 Immersive Scaler 📐📏🎨")]
     [DisallowMultipleComponent]
     public class ImmersiveScalerComponent : MonoBehaviour, IImmersiveScalerEditorOnly
     {
@@ -108,8 +109,18 @@ namespace VRChatImmersiveScaler
         
         [Tooltip("Use bone positions instead of mesh bounds for floor calculation (more reliable but less accurate)")]
         public bool useBoneBasedFloorCalculation = false;
+
+        [Header("Measurement Overrides")]
+        [Tooltip("If enabled, floor/height measurements will use only the specified body/head SkinnedMeshRenderers. This helps ignore props or bad bounds from other meshes.")]
+        public bool useMeasurementRendererOverrides = false;
+
+        [Tooltip("Skinned mesh renderers that represent the main body (used for floor + height measurement)")]
+        public List<SkinnedMeshRenderer> measurementBodyRenderers = new List<SkinnedMeshRenderer>();
+
+        [Tooltip("Optional skinned mesh renderers that represent the head (included for height measurement)")]
+        public List<SkinnedMeshRenderer> measurementHeadRenderers = new List<SkinnedMeshRenderer>();
         
-        // Store original ViewPosition for restoration if needed
+        // Legacy serialized fields kept for existing components; active previews keep their own restore state.
         [HideInInspector]
         public Vector3 originalViewPosition;
         [HideInInspector]
@@ -140,11 +151,10 @@ namespace VRChatImmersiveScaler
         public bool upperBodyUseLegacy = true; // true = use legacy (leg to eye)/(floor to eye) calculation
     }
     
-    // Fallback interface for non-VRChat environments
 #if !VRC_SDK_VRCSDK3
     public interface IEditorOnly
     {
-        // Marker interface
+        // Marker interface for non-VRChat compile checks.
     }
 #endif
 }

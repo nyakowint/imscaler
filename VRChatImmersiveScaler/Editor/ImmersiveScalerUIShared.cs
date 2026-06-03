@@ -3,6 +3,7 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 using VRC.SDK3.Avatars.Components;
+using Kittyn.Tools.ImmersiveScaler;
 
 namespace VRChatImmersiveScaler
 {
@@ -11,6 +12,13 @@ namespace VRChatImmersiveScaler
     /// </summary>
     public static class ImmersiveScalerUIShared
     {
+        private static void LogDebug(string message)
+        {
+#if KITTYN_IMMERSIVE_SCALER_DEBUG
+            Debug.Log(message);
+#endif
+        }
+
         // Map measurements between Current Avatar Stats and Measurement Config sections
         public static readonly Dictionary<string, string[]> relatedMeasurements = new Dictionary<string, string[]>
         {
@@ -102,29 +110,29 @@ namespace VRChatImmersiveScaler
 
         public static void DrawCurrentStatsSection(IParameterProvider parameters, ImmersiveScalerCore scalerCore, VRCAvatarDescriptor avatar, ref bool showCurrentStats, bool isPreviewActive = false, Vector3 originalViewPosition = default)
         {
-            showCurrentStats = EditorGUILayout.Foldout(showCurrentStats, "Current Avatar Stats", true);
+            showCurrentStats = EditorGUILayout.Foldout(showCurrentStats, KittynLocalization.Get("immersive_scaler.current_avatar_stats"), true);
             if (showCurrentStats && scalerCore != null)
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 
                 // Show both heights for reference
-                float totalHeight = scalerCore.GetHighestPoint() - scalerCore.GetLowestPoint();
-                float eyeHeight = scalerCore.GetEyeHeight() - scalerCore.GetLowestPoint();
-                DrawMeasurementWithToggle(parameters, "Total Height:", $"{totalHeight:F3}m", "total_height");
-                DrawMeasurementWithToggle(parameters, "Eye Height:", $"{eyeHeight:F3}m", "eye_height");
+                float totalHeight = scalerCore.GetHighestPoint() - scalerCore.GetLowestPoint(parameters.useBoneBasedFloorCalculation);
+                float eyeHeight = scalerCore.GetEyeHeight() - scalerCore.GetLowestPoint(parameters.useBoneBasedFloorCalculation);
+                DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.total_height_label"), $"{totalHeight:F3}m", "total_height");
+                DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.eye_height_label"), $"{eyeHeight:F3}m", "eye_height");
                 
                 // ViewPosition
                 string viewPosDisplay;
-                if (isPreviewActive && originalViewPosition != default)
+                if (isPreviewActive)
                 {
-                    viewPosDisplay = $"{originalViewPosition.ToString("F3")} (original)";
+                    viewPosDisplay = $"{originalViewPosition.ToString("F3")} {KittynLocalization.Get("immersive_scaler.original_text")}";
                 }
                 else
                 {
                     viewPosDisplay = avatar.ViewPosition.ToString("F3");
                 }
-                DrawMeasurementWithToggle(parameters, "ViewPosition:", viewPosDisplay, "view_position");
+                DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.view_position_label"), viewPosDisplay, "view_position");
                 
                 // Selected upper body ratio
                 float upperBodyRatio;
@@ -132,35 +140,35 @@ namespace VRChatImmersiveScaler
                 
                 if (parameters.upperBodyUseLegacy)
                 {
-                    upperBodyRatio = scalerCore.GetUpperBodyPortion();
-                    upperBodyDesc = "Legacy (Leg→Eye/Floor→Eye)";
+                    upperBodyRatio = scalerCore.GetUpperBodyPortion(parameters.useBoneBasedFloorCalculation);
+                    upperBodyDesc = KittynLocalization.Get("immersive_scaler.upper_body_legacy_desc");
                 }
                 else
                 {
-                    upperBodyRatio = scalerCore.GetUpperBodyRatio(parameters.upperBodyUseNeck, parameters.upperBodyTorsoUseNeck);
-                    upperBodyDesc = $"{(parameters.upperBodyTorsoUseNeck ? "Leg→Neck" : "Leg→Head")} / {(parameters.upperBodyUseNeck ? "Floor→Neck" : "Floor→Head")}";
+                    upperBodyRatio = scalerCore.GetUpperBodyRatio(parameters.upperBodyUseNeck, parameters.upperBodyTorsoUseNeck, parameters.useBoneBasedFloorCalculation);
+                    upperBodyDesc = $"{(parameters.upperBodyTorsoUseNeck ? KittynLocalization.Get("immersive_scaler.measurement_leg_to_neck") : KittynLocalization.Get("immersive_scaler.measurement_leg_to_head"))} / {(parameters.upperBodyUseNeck ? KittynLocalization.Get("immersive_scaler.measurement_floor_to_neck") : KittynLocalization.Get("immersive_scaler.measurement_floor_to_head"))}";
                 }
                 
-                DrawMeasurementWithToggle(parameters, $"Upper Body % ({upperBodyDesc}):", $"{upperBodyRatio * 100f:F1}%", "upper_body_selected");
+                DrawMeasurementWithToggle(parameters, KittynLocalization.GetFormat("immersive_scaler.upper_body_percent_label", upperBodyDesc), $"{upperBodyRatio * 100f:F1}%", "upper_body_selected");
                 
                 // Selected arm measurement
                 float armValue = scalerCore.GetArmByMethod(parameters.armToHeightRatioMethod);
                 string armLabel = parameters.armToHeightRatioMethod switch
                 {
-                    ArmMethodType.HeadToElbowVRC => "Head-to-Elbow (VRC):",
-                    ArmMethodType.HeadToHand => "Head-to-Hand:",
-                    ArmMethodType.ArmLength => "Arm Length:",
-                    ArmMethodType.ShoulderToFingertip => "Shoulder to Fingertip:",
-                    ArmMethodType.CenterToHand => "Center to Hand:",
-                    ArmMethodType.CenterToFingertip => "Center to Fingertip:",
-                    _ => "Arm Measurement:"
+                    ArmMethodType.HeadToElbowVRC => KittynLocalization.Get("immersive_scaler.head_to_elbow_vrc_label"),
+                    ArmMethodType.HeadToHand => KittynLocalization.Get("immersive_scaler.head_to_hand_label"),
+                    ArmMethodType.ArmLength => KittynLocalization.Get("immersive_scaler.arm_length_label"),
+                    ArmMethodType.ShoulderToFingertip => KittynLocalization.Get("immersive_scaler.shoulder_to_fingertip_label"),
+                    ArmMethodType.CenterToHand => KittynLocalization.Get("immersive_scaler.center_to_hand_label"),
+                    ArmMethodType.CenterToFingertip => KittynLocalization.Get("immersive_scaler.center_to_fingertip_label"),
+                    _ => KittynLocalization.Get("immersive_scaler.arm_measurement_label")
                 };
                 DrawMeasurementWithToggle(parameters, armLabel, $"{armValue:F3}m", GetMeasurementKeyForArmType(parameters.armToHeightRatioMethod));
                 
                 // Current scale ratio using selected methods
-                float heightForRatio = scalerCore.GetHeightByMethod(parameters.armToHeightHeightMethod);
+                float heightForRatio = scalerCore.GetHeightByMethod(parameters.armToHeightHeightMethod, parameters.useBoneBasedFloorCalculation);
                 float currentRatio = heightForRatio > 0 ? armValue / (heightForRatio - 0.005f) : 0.4537f;
-                DrawMeasurementWithToggle(parameters, "Arm-to-Height Ratio:", $"{currentRatio:F4}", "current_scale_ratio");
+                DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.arm_to_height_ratio"), $"{currentRatio:F4}", "current_scale_ratio");
                 
                 EditorGUILayout.EndVertical();
                 EditorGUI.indentLevel--;
@@ -170,50 +178,50 @@ namespace VRChatImmersiveScaler
         public static void DrawMeasurementConfigSection(IParameterProvider parameters, ImmersiveScalerCore scalerCore, 
             ref bool showMeasurementConfig, ref bool showDebugRatios)
         {
-            showMeasurementConfig = EditorGUILayout.Foldout(showMeasurementConfig, "Measurement Config", true);
+            showMeasurementConfig = EditorGUILayout.Foldout(showMeasurementConfig, KittynLocalization.Get("immersive_scaler.measurement_config"), true);
             if (showMeasurementConfig && scalerCore != null)
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 
                 // Header
-                EditorGUILayout.LabelField("Measurement Methods", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField(KittynLocalization.Get("immersive_scaler.measurement_methods"), EditorStyles.boldLabel);
                 
                 EditorGUILayout.Space(5);
                 
                 // Arm Length Method group
-                EditorGUILayout.LabelField("Arm Length Method (for Arm-to-Height Ratio):", EditorStyles.boldLabel);
-                DrawMeasurementWithSelectors(parameters, "Head-to-Elbow (VRC):", $"{scalerCore.HeadToHand():F3}m", "head_to_elbow_vrc", false, true, false);
-                DrawMeasurementWithSelectors(parameters, "Head-to-Hand:", $"{scalerCore.HeadToWrist():F3}m", "head_to_hand", false, true, false);
-                DrawMeasurementWithSelectors(parameters, "Arm Length (shoulder to wrist):", $"{scalerCore.GetArmLength():F3}m", "arm_length", false, true, false);
-                DrawMeasurementWithSelectors(parameters, "Shoulder to Fingertip:", $"{scalerCore.GetShoulderToFingertip():F3}m", "shoulder_to_fingertip", false, true, false);
-                DrawMeasurementWithSelectors(parameters, "Center to Hand:", $"{scalerCore.GetCenterToHand():F3}m", "center_to_hand", false, true, false);
-                DrawMeasurementWithSelectors(parameters, "Center to Fingertip:", $"{scalerCore.GetCenterToFingertip():F3}m", "center_to_fingertip", false, true, false);
+                EditorGUILayout.LabelField(KittynLocalization.Get("immersive_scaler.arm_length_method_header"), EditorStyles.boldLabel);
+                DrawMeasurementWithSelectors(parameters, KittynLocalization.Get("immersive_scaler.head_to_elbow_vrc_label"), $"{scalerCore.HeadToHand():F3}m", "head_to_elbow_vrc", false, true, false);
+                DrawMeasurementWithSelectors(parameters, KittynLocalization.Get("immersive_scaler.head_to_hand_label"), $"{scalerCore.HeadToWrist():F3}m", "head_to_hand", false, true, false);
+                DrawMeasurementWithSelectors(parameters, KittynLocalization.Get("immersive_scaler.arm_length_shoulder_to_wrist_label"), $"{scalerCore.GetArmLength():F3}m", "arm_length", false, true, false);
+                DrawMeasurementWithSelectors(parameters, KittynLocalization.Get("immersive_scaler.shoulder_to_fingertip_label"), $"{scalerCore.GetShoulderToFingertip():F3}m", "shoulder_to_fingertip", false, true, false);
+                DrawMeasurementWithSelectors(parameters, KittynLocalization.Get("immersive_scaler.center_to_hand_label"), $"{scalerCore.GetCenterToHand():F3}m", "center_to_hand", false, true, false);
+                DrawMeasurementWithSelectors(parameters, KittynLocalization.Get("immersive_scaler.center_to_fingertip_label"), $"{scalerCore.GetCenterToFingertip():F3}m", "center_to_fingertip", false, true, false);
                 
                 EditorGUILayout.Space(10);
                 
                 // Height Method group
-                EditorGUILayout.LabelField("Height Method:", EditorStyles.boldLabel);
-                float totalHeight = scalerCore.GetHighestPoint() - scalerCore.GetLowestPoint();
-                float eyeHeight = scalerCore.GetEyeHeight() - scalerCore.GetLowestPoint();
-                DrawMeasurementWithSelectors(parameters, "Total Height:", $"{totalHeight:F3}m", "total_height", true, false, false);
-                DrawMeasurementWithSelectors(parameters, "Eye Height:", $"{eyeHeight:F3}m", "eye_height_debug", true, false, false);
+                EditorGUILayout.LabelField(KittynLocalization.Get("immersive_scaler.height_method"), EditorStyles.boldLabel);
+                float totalHeight = scalerCore.GetHighestPoint() - scalerCore.GetLowestPoint(parameters.useBoneBasedFloorCalculation);
+                float eyeHeight = scalerCore.GetEyeHeight() - scalerCore.GetLowestPoint(parameters.useBoneBasedFloorCalculation);
+                DrawMeasurementWithSelectors(parameters, KittynLocalization.Get("immersive_scaler.total_height_colon"), $"{totalHeight:F3}m", "total_height", true, false, false);
+                DrawMeasurementWithSelectors(parameters, KittynLocalization.Get("immersive_scaler.eye_height_colon"), $"{eyeHeight:F3}m", "eye_height_debug", true, false, false);
                 
                 EditorGUILayout.Space(10);
                 
                 // Upper Body Method group
-                EditorGUILayout.LabelField("Upper Body Method:", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField(KittynLocalization.Get("immersive_scaler.upper_body_method"), EditorStyles.boldLabel);
                 
                 // Height measurements
-                EditorGUILayout.LabelField("Height Measurement (denominator):", EditorStyles.miniBoldLabel);
-                DrawMeasurementWithSelectors(parameters, "Floor to Neck:", $"{scalerCore.GetHeadHeight():F3}m", "neck_height", false, false, true);
-                DrawMeasurementWithSelectors(parameters, "Floor to Head:", $"{scalerCore.GetFloorToHeadHeight():F3}m", "head_height", false, false, true);
+                EditorGUILayout.LabelField(KittynLocalization.Get("immersive_scaler.height_measurement_denominator"), EditorStyles.miniBoldLabel);
+                DrawMeasurementWithSelectors(parameters, KittynLocalization.Get("immersive_scaler.floor_to_neck_colon"), $"{scalerCore.GetHeadHeight(parameters.useBoneBasedFloorCalculation):F3}m", "neck_height", false, false, true);
+                DrawMeasurementWithSelectors(parameters, KittynLocalization.Get("immersive_scaler.floor_to_head_colon"), $"{scalerCore.GetFloorToHeadHeight(parameters.useBoneBasedFloorCalculation):F3}m", "head_height", false, false, true);
                 
                 EditorGUILayout.Space(5);
                 
                 // Torso measurements
-                EditorGUILayout.LabelField("Torso Measurement (numerator):", EditorStyles.miniBoldLabel);
-                DrawMeasurementWithSelectors(parameters, "Upper Leg to Neck:", $"{scalerCore.GetUpperBodyLength():F3}m", "upper_body_neck", false, false, true);
+                EditorGUILayout.LabelField(KittynLocalization.Get("immersive_scaler.torso_measurement_numerator"), EditorStyles.miniBoldLabel);
+                DrawMeasurementWithSelectors(parameters, KittynLocalization.Get("immersive_scaler.upper_leg_to_neck_colon"), $"{scalerCore.GetUpperBodyLength():F3}m", "upper_body_neck", false, false, true);
                 
                 // Calculate leg to head
                 Transform leftLeg = scalerCore.GetBone(HumanBodyBones.LeftUpperLeg);
@@ -225,50 +233,50 @@ namespace VRChatImmersiveScaler
                     float legY = (leftLeg.position.y + rightLeg.position.y) / 2f;
                     legToHead = head.position.y - legY;
                 }
-                DrawMeasurementWithSelectors(parameters, "Upper Leg to Head:", $"{legToHead:F3}m", "upper_body_head", false, false, true);
+                DrawMeasurementWithSelectors(parameters, KittynLocalization.Get("immersive_scaler.upper_leg_to_head_colon"), $"{legToHead:F3}m", "upper_body_head", false, false, true);
                 
                 EditorGUILayout.Space(5);
                 
                 // Legacy method
-                EditorGUILayout.LabelField("Legacy Method:", EditorStyles.miniBoldLabel);
-                DrawMeasurementWithSelectors(parameters, "Legacy (Leg→Eye/Floor→Eye):", $"{scalerCore.GetUpperBodyPortion() * 100f:F1}%", "upper_body_legacy", false, false, true);
+                EditorGUILayout.LabelField(KittynLocalization.Get("immersive_scaler.legacy_method"), EditorStyles.miniBoldLabel);
+                DrawMeasurementWithSelectors(parameters, KittynLocalization.Get("immersive_scaler.legacy_method_desc"), $"{scalerCore.GetUpperBodyPortion(parameters.useBoneBasedFloorCalculation) * 100f:F1}%", "upper_body_legacy", false, false, true);
                 
                 EditorGUILayout.Space(10);
                 
                 // Additional measurements
-                EditorGUILayout.LabelField("Other Measurements:", EditorStyles.boldLabel);
-                DrawMeasurementWithToggle(parameters, "Fingertip to Fingertip:", $"{scalerCore.GetFingertipToFingertip():F3}m", "fingertip_to_fingertip");
+                EditorGUILayout.LabelField(KittynLocalization.Get("immersive_scaler.other_measurements"), EditorStyles.boldLabel);
+                DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.fingertip_to_fingertip"), $"{scalerCore.GetFingertipToFingertip():F3}m", "fingertip_to_fingertip");
                 
                 EditorGUILayout.Space(10);
                 
                 // Debug Ratios in a foldout
-                showDebugRatios = EditorGUILayout.Foldout(showDebugRatios, "Debug Ratios", true);
+                showDebugRatios = EditorGUILayout.Foldout(showDebugRatios, KittynLocalization.Get("immersive_scaler.debug_ratios"), true);
                 if (showDebugRatios)
                 {
                     EditorGUI.indentLevel++;
-                    float debugTotalHeight = scalerCore.GetHighestPoint() - scalerCore.GetLowestPoint();
-                    float debugEyeHeight = scalerCore.GetEyeHeight() - scalerCore.GetLowestPoint();
+                    float debugTotalHeight = scalerCore.GetHighestPoint() - scalerCore.GetLowestPoint(parameters.useBoneBasedFloorCalculation);
+                    float debugEyeHeight = scalerCore.GetEyeHeight() - scalerCore.GetLowestPoint(parameters.useBoneBasedFloorCalculation);
                     
-                    DrawMeasurementWithToggle(parameters, "Simple Arm/Height:", $"{scalerCore.GetSimpleArmRatio():F4}", "simple_arm_height");
-                    DrawMeasurementWithToggle(parameters, "Arm/Eye Height:", $"{scalerCore.GetArmToEyeRatio():F4}", "arm_eye_height");
-                    DrawMeasurementWithToggle(parameters, "Head-to-T-pose/Eye Height:", $"{scalerCore.GetCurrentScaling():F4}", "head_tpose_eye_height");
+                    DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.simple_arm_height"), $"{scalerCore.GetSimpleArmRatio(parameters.useBoneBasedFloorCalculation):F4}", "simple_arm_height");
+                    DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.arm_eye_height"), $"{scalerCore.GetArmToEyeRatio(parameters.useBoneBasedFloorCalculation):F4}", "arm_eye_height");
+                    DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.head_tpose_eye_height"), $"{scalerCore.GetCurrentScaling(parameters.useBoneBasedFloorCalculation):F4}", "head_tpose_eye_height");
                     
                     // Additional calculations
                     float shoulderToFingertipRatio = scalerCore.GetShoulderToFingertip() / debugTotalHeight;
                     float shoulderToFingertipEyeRatio = scalerCore.GetShoulderToFingertip() / debugEyeHeight;
-                    DrawMeasurementWithToggle(parameters, "Shoulder-Fingertip/Height:", $"{shoulderToFingertipRatio:F4}", "shoulder_fingertip_height");
-                    DrawMeasurementWithToggle(parameters, "Shoulder-Fingertip/Eye Height:", $"{shoulderToFingertipEyeRatio:F4}", "shoulder_fingertip_eye_height");
+                    DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.shoulder_fingertip_height"), $"{shoulderToFingertipRatio:F4}", "shoulder_fingertip_height");
+                    DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.shoulder_fingertip_eye_height"), $"{shoulderToFingertipEyeRatio:F4}", "shoulder_fingertip_eye_height");
                     
                     // Upper body calculations
-                    DrawMeasurementWithToggle(parameters, "Upper Body % (Leg→Neck/Floor→Eye):", $"{scalerCore.GetUpperBodyPortion() * 100f:F1}%", "upper_body_percent");
-                    DrawMeasurementWithToggle(parameters, "Alternate Upper Body %:", $"{scalerCore.GetAlternateUpperBodyRatio() * 100f:F1}%", "alternate_upper_body_percent");
+                    DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.upper_body_percent_alt"), $"{scalerCore.GetUpperBodyPortion(parameters.useBoneBasedFloorCalculation) * 100f:F1}%", "upper_body_percent");
+                    DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.alternate_upper_body_percent"), $"{scalerCore.GetAlternateUpperBodyRatio() * 100f:F1}%", "alternate_upper_body_percent");
                     
-                    DrawMeasurementWithToggle(parameters, "Head-to-Hand/Eye Height:", $"{scalerCore.GetHeadWristToEyeRatio():F4}", "head_hand_eye_ratio");
-                    DrawMeasurementWithToggle(parameters, "Head-to-Hand/Height:", $"{scalerCore.GetHeadWristToHeightRatio():F4}", "head_hand_height_ratio");
-                    DrawMeasurementWithToggle(parameters, "Center-Hand/Height:", $"{scalerCore.GetCenterHandToHeightRatio():F4}", "center_hand_height_ratio");
-                    DrawMeasurementWithToggle(parameters, "Center-Hand/Eye Height:", $"{scalerCore.GetCenterHandToEyeRatio():F4}", "center_hand_eye_ratio");
-                    DrawMeasurementWithToggle(parameters, "Center-Fingertip/Height:", $"{scalerCore.GetCenterFingertipToHeightRatio():F4}", "center_fingertip_height_ratio");
-                    DrawMeasurementWithToggle(parameters, "Center-Fingertip/Eye Height:", $"{scalerCore.GetCenterFingertipToEyeRatio():F4}", "center_fingertip_eye_ratio");
+                    DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.head_hand_eye_ratio"), $"{scalerCore.GetHeadWristToEyeRatio():F4}", "head_hand_eye_ratio");
+                    DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.head_hand_height_ratio"), $"{scalerCore.GetHeadWristToHeightRatio():F4}", "head_hand_height_ratio");
+                    DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.center_hand_height_ratio"), $"{scalerCore.GetCenterHandToHeightRatio():F4}", "center_hand_height_ratio");
+                    DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.center_hand_eye_ratio"), $"{scalerCore.GetCenterHandToEyeRatio():F4}", "center_hand_eye_ratio");
+                    DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.center_fingertip_height_ratio"), $"{scalerCore.GetCenterFingertipToHeightRatio():F4}", "center_fingertip_height_ratio");
+                    DrawMeasurementWithToggle(parameters, KittynLocalization.Get("immersive_scaler.center_fingertip_eye_ratio"), $"{scalerCore.GetCenterFingertipToEyeRatio():F4}", "center_fingertip_eye_ratio");
                     EditorGUI.indentLevel--;
                 }
                 
@@ -279,7 +287,7 @@ namespace VRChatImmersiveScaler
 
         public static void DrawBasicSettingsSection(IParameterProvider parameters, ImmersiveScalerCore scalerCore, SerializedObject serializedObject = null)
         {
-            EditorGUILayout.LabelField("Basic Settings", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(KittynLocalization.Get("immersive_scaler.basic_settings"), EditorStyles.boldLabel);
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             
             // Target Height
@@ -288,20 +296,20 @@ namespace VRChatImmersiveScaler
             {
                 var targetHeightProp = serializedObject.FindProperty("targetHeight");
                 targetHeightProp.floatValue = EditorGUILayout.Slider(
-                    new GUIContent("Target Height", "Desired height of the avatar in meters"),
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.target_height"), KittynLocalization.Get("immersive_scaler.target_height_tooltip")),
                     targetHeightProp.floatValue, 0.5f, 3.0f
                 );
             }
             else
             {
                 parameters.targetHeight = EditorGUILayout.Slider(
-                    new GUIContent("Target Height", "Desired height of the avatar in meters"),
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.target_height"), KittynLocalization.Get("immersive_scaler.target_height_tooltip")),
                     parameters.targetHeight, 0.5f, 3.0f
                 );
             }
-            if (GUILayout.Button("Get Current", GUILayout.Width(80)))
+            if (GUILayout.Button(KittynLocalization.Get("common.get_current"), GUILayout.Width(80)))
             {
-                parameters.targetHeight = scalerCore.GetHeightByMethod(parameters.targetHeightMethod);
+                parameters.targetHeight = scalerCore.GetHeightByMethod(parameters.targetHeightMethod, parameters.useBoneBasedFloorCalculation);
                 parameters.SetDirty();
             }
             EditorGUILayout.EndHorizontal();
@@ -310,25 +318,29 @@ namespace VRChatImmersiveScaler
             EditorGUILayout.BeginHorizontal();
             if (serializedObject != null)
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("upperBodyPercentage"));
+                var upperBodyProp = serializedObject.FindProperty("upperBodyPercentage");
+                upperBodyProp.floatValue = EditorGUILayout.Slider(
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.field_upper_body_percentage"), KittynLocalization.Get("immersive_scaler.upper_body_percent_tooltip")),
+                    upperBodyProp.floatValue, 30f, 75f
+                );
             }
             else
             {
                 parameters.upperBodyPercentage = EditorGUILayout.Slider(
-                    new GUIContent("Upper Body %", "Percentage of height for upper body"),
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.upper_body_percent"), KittynLocalization.Get("immersive_scaler.upper_body_percent_tooltip")),
                     parameters.upperBodyPercentage, 30f, 75f
                 );
             }
-            if (GUILayout.Button("Get Current", GUILayout.Width(80)))
+            if (GUILayout.Button(KittynLocalization.Get("common.get_current"), GUILayout.Width(80)))
             {
                 float upperBodyRatio;
                 if (parameters.upperBodyUseLegacy)
                 {
-                    upperBodyRatio = scalerCore.GetUpperBodyPortion();
+                    upperBodyRatio = scalerCore.GetUpperBodyPortion(parameters.useBoneBasedFloorCalculation);
                 }
                 else
                 {
-                    upperBodyRatio = scalerCore.GetUpperBodyRatio(parameters.upperBodyUseNeck, parameters.upperBodyTorsoUseNeck);
+                    upperBodyRatio = scalerCore.GetUpperBodyRatio(parameters.upperBodyUseNeck, parameters.upperBodyTorsoUseNeck, parameters.useBoneBasedFloorCalculation);
                 }
                 parameters.upperBodyPercentage = upperBodyRatio * 100f;
                 parameters.SetDirty();
@@ -341,21 +353,21 @@ namespace VRChatImmersiveScaler
             {
                 var armRatioProp = serializedObject.FindProperty("customScaleRatio");
                 armRatioProp.floatValue = EditorGUILayout.Slider(
-                    new GUIContent("Arm Ratio", "VRChat's arm ratio - controls IK arm length (default: 0.4537, lower = longer arms)"),
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.arm_ratio"), KittynLocalization.Get("immersive_scaler.arm_ratio_tooltip")),
                     armRatioProp.floatValue, 0.2f, 0.8f
                 );
             }
             else
             {
                 parameters.customScaleRatio = EditorGUILayout.Slider(
-                    new GUIContent("Arm Ratio", "VRChat's arm ratio - controls IK arm length (default: 0.4537, lower = longer arms)"),
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.arm_ratio"), KittynLocalization.Get("immersive_scaler.arm_ratio_tooltip")),
                     parameters.customScaleRatio, 0.2f, 0.8f
                 );
             }
-            if (GUILayout.Button("Get Current", GUILayout.Width(80)))
+            if (GUILayout.Button(KittynLocalization.Get("common.get_current"), GUILayout.Width(80)))
             {
                 float armValue = scalerCore.GetArmByMethod(parameters.armToHeightRatioMethod);
-                float heightValue = scalerCore.GetHeightByMethod(parameters.armToHeightHeightMethod);
+                float heightValue = scalerCore.GetHeightByMethod(parameters.armToHeightHeightMethod, parameters.useBoneBasedFloorCalculation);
                 parameters.customScaleRatio = heightValue > 0 ? armValue / (heightValue - 0.005f) : 0.4537f;
                 parameters.SetDirty();
             }
@@ -366,7 +378,7 @@ namespace VRChatImmersiveScaler
 
         public static void DrawBodyProportionsSection(IParameterProvider parameters, ImmersiveScalerCore scalerCore, SerializedObject serializedObject = null)
         {
-            EditorGUILayout.LabelField("Body Proportions", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(KittynLocalization.Get("immersive_scaler.body_proportions"), EditorStyles.boldLabel);
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             
             // Create strikethrough style for deprecated fields
@@ -377,16 +389,20 @@ namespace VRChatImmersiveScaler
             EditorGUILayout.BeginHorizontal();
             if (serializedObject != null)
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("armThickness"));
+                var armThicknessProp = serializedObject.FindProperty("armThickness");
+                armThicknessProp.floatValue = EditorGUILayout.Slider(
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.field_arm_thickness"), KittynLocalization.Get("immersive_scaler.arm_thickness_tooltip")),
+                    armThicknessProp.floatValue, 0f, 100f
+                );
             }
             else
             {
                 parameters.armThickness = EditorGUILayout.Slider(
-                    new GUIContent("Arm Thickness", "How much arm thickness to maintain (0% = scale fully, 100% = keep original)"),
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.arm_thickness"), KittynLocalization.Get("immersive_scaler.arm_thickness_tooltip")),
                     parameters.armThickness, 0f, 100f
                 );
             }
-            if (GUILayout.Button("Get Current", GUILayout.Width(80)))
+            if (GUILayout.Button(KittynLocalization.Get("common.get_current"), GUILayout.Width(80)))
             {
                 parameters.armThickness = scalerCore.GetCurrentArmThickness() * 100f;
                 parameters.SetDirty();
@@ -397,17 +413,20 @@ namespace VRChatImmersiveScaler
             EditorGUILayout.BeginHorizontal();
             if (serializedObject != null)
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("legThickness"), 
-                    new GUIContent("Leg Thickness", "How much leg thickness to maintain (0% = scale fully, 100% = keep original)"));
+                var legThicknessProp = serializedObject.FindProperty("legThickness");
+                legThicknessProp.floatValue = EditorGUILayout.Slider(
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.field_leg_thickness"), KittynLocalization.Get("immersive_scaler.leg_thickness_tooltip")),
+                    legThicknessProp.floatValue, 0f, 100f
+                );
             }
             else
             {
                 parameters.legThickness = EditorGUILayout.Slider(
-                    new GUIContent("Leg Thickness", "How much leg thickness to maintain (0% = scale fully, 100% = keep original)"),
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.leg_thickness"), KittynLocalization.Get("immersive_scaler.leg_thickness_tooltip")),
                     parameters.legThickness, 0f, 100f
                 );
             }
-            if (GUILayout.Button("Get Current", GUILayout.Width(80)))
+            if (GUILayout.Button(KittynLocalization.Get("common.get_current"), GUILayout.Width(80)))
             {
                 parameters.legThickness = scalerCore.GetCurrentLegThickness() * 100f;
                 parameters.SetDirty();
@@ -419,16 +438,16 @@ namespace VRChatImmersiveScaler
             if (serializedObject != null)
             {
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("thighPercentage"), 
-                    new GUIContent("Upper Leg %", "Percentage of leg that is thigh (10-90%)"));
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.upper_leg_percent"), KittynLocalization.Get("immersive_scaler.upper_leg_percent_tooltip")));
             }
             else
             {
                 parameters.thighPercentage = EditorGUILayout.Slider(
-                    new GUIContent("Upper Leg %", "Percentage of leg that is thigh (10-90%)"),
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.upper_leg_percent"), KittynLocalization.Get("immersive_scaler.upper_leg_percent_tooltip")),
                     parameters.thighPercentage, 10f, 90f
                 );
             }
-            if (GUILayout.Button("Get Current", GUILayout.Width(80)))
+            if (GUILayout.Button(KittynLocalization.Get("common.get_current"), GUILayout.Width(80)))
             {
                 parameters.thighPercentage = scalerCore.GetThighPercentage() * 100f;
                 parameters.SetDirty();
@@ -440,39 +459,51 @@ namespace VRChatImmersiveScaler
 
         public static void DrawScalingOptionsSection(IParameterProvider parameters, SerializedObject serializedObject = null)
         {
-            EditorGUILayout.LabelField("Scaling Options", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(KittynLocalization.Get("immersive_scaler.scaling_options_header"), EditorStyles.boldLabel);
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             
             if (serializedObject != null)
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("scaleHand"), 
-                    new GUIContent("Scale Hands With Arms", "Scale hands proportionally with arms"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("scaleFoot"), 
-                    new GUIContent("Scale Feet With Legs", "Scale feet proportionally with legs"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("scaleEyes"), 
-                    new GUIContent("Scale To Eyes", "Measure height to eyes instead of top of head"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("centerModel"), 
-                    new GUIContent("Center Model", "Center avatar at world origin (X=0, Z=0)"));
+                var scaleHandProp = serializedObject.FindProperty("scaleHand");
+                scaleHandProp.boolValue = EditorGUILayout.Toggle(
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.field_scale_hand"), KittynLocalization.Get("immersive_scaler.scale_hands_tooltip")),
+                    scaleHandProp.boolValue
+                );
+                var scaleFootProp = serializedObject.FindProperty("scaleFoot");
+                scaleFootProp.boolValue = EditorGUILayout.Toggle(
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.field_scale_foot"), KittynLocalization.Get("immersive_scaler.scale_feet_tooltip")),
+                    scaleFootProp.boolValue
+                );
+                var scaleEyesProp = serializedObject.FindProperty("scaleEyes");
+                scaleEyesProp.boolValue = EditorGUILayout.Toggle(
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.field_scale_eyes"), KittynLocalization.Get("immersive_scaler.scale_to_eyes_tooltip")),
+                    scaleEyesProp.boolValue
+                );
+                var centerModelProp = serializedObject.FindProperty("centerModel");
+                centerModelProp.boolValue = EditorGUILayout.Toggle(
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.field_center_model"), KittynLocalization.Get("immersive_scaler.center_model_tooltip")),
+                    centerModelProp.boolValue
+                );
             }
             else
             {
                 parameters.scaleHand = EditorGUILayout.Toggle(
-                    new GUIContent("Scale Hands", "Scale hands proportionally with arms"),
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.scale_hands"), KittynLocalization.Get("immersive_scaler.scale_hands_tooltip")),
                     parameters.scaleHand
                 );
                 
                 parameters.scaleFoot = EditorGUILayout.Toggle(
-                    new GUIContent("Scale Feet", "Scale feet proportionally with legs"),
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.scale_feet"), KittynLocalization.Get("immersive_scaler.scale_feet_tooltip")),
                     parameters.scaleFoot
                 );
                 
                 parameters.scaleEyes = EditorGUILayout.Toggle(
-                    new GUIContent("Scale to Eyes", "Measure height to eyes instead of top of head"),
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.scale_to_eyes"), KittynLocalization.Get("immersive_scaler.scale_to_eyes_tooltip")),
                     parameters.scaleEyes
                 );
                 
                 parameters.centerModel = EditorGUILayout.Toggle(
-                    new GUIContent("Center Model", "Center avatar at world origin (X=0, Z=0)"),
+                    new GUIContent(KittynLocalization.Get("immersive_scaler.center_model"), KittynLocalization.Get("immersive_scaler.center_model_tooltip")),
                     parameters.centerModel
                 );
             }
@@ -482,7 +513,7 @@ namespace VRChatImmersiveScaler
 
         public static void DrawAdvancedOptionsSection(IParameterProvider parameters, ref bool showAdvanced, SerializedObject serializedObject = null)
         {
-            showAdvanced = EditorGUILayout.Foldout(showAdvanced, "Advanced Options", true);
+            showAdvanced = EditorGUILayout.Foldout(showAdvanced, KittynLocalization.Get("immersive_scaler.advanced_options"), true);
             if (showAdvanced)
             {
                 EditorGUI.indentLevel++;
@@ -494,23 +525,37 @@ namespace VRChatImmersiveScaler
                 
                 if (serializedObject != null)
                 {
-                    EditorGUILayout.PropertyField(serializedObject.FindProperty("extraLegLength"));
+                    var extraLegLengthProp = serializedObject.FindProperty("extraLegLength");
+                    extraLegLengthProp.floatValue = EditorGUILayout.FloatField(
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.field_extra_leg_length"), KittynLocalization.Get("immersive_scaler.tooltip_extra_leg_length")),
+                        extraLegLengthProp.floatValue
+                    );
                     
                     // Scale Relative (Deprecated)
                     GUI.enabled = false;
-                    EditorGUILayout.PropertyField(serializedObject.FindProperty("scaleRelative"), 
-                        new GUIContent("̶S̶c̶a̶l̶e̶ ̶b̶y̶ ̶R̶e̶l̶a̶t̶i̶v̶e̶ ̶P̶r̶o̶p̶o̶r̶t̶i̶o̶n̶s̶", "Use relative proportions mode instead of upper body percentage"));
+                    var scaleRelativeProp = serializedObject.FindProperty("scaleRelative");
+                    scaleRelativeProp.boolValue = EditorGUILayout.Toggle(
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.field_scale_relative"), KittynLocalization.Get("immersive_scaler.deprecated_scale_by_relative_tooltip")),
+                        scaleRelativeProp.boolValue
+                    );
                     GUI.enabled = true;
                     
                     if (parameters.scaleRelative)
                     {
-                        EditorGUILayout.PropertyField(serializedObject.FindProperty("armToLegs"));
+                        var armToLegsProp = serializedObject.FindProperty("armToLegs");
+                        armToLegsProp.floatValue = EditorGUILayout.Slider(
+                            new GUIContent(KittynLocalization.Get("immersive_scaler.field_arm_to_legs"), KittynLocalization.Get("immersive_scaler.arm_to_legs_percent_tooltip")),
+                            armToLegsProp.floatValue, 0f, 100f
+                        );
                     }
                     
                     // Keep Head Size (Deprecated)
                     GUI.enabled = false;
-                    EditorGUILayout.PropertyField(serializedObject.FindProperty("keepHeadSize"), 
-                        new GUIContent("̶K̶e̶e̶p̶ ̶H̶e̶a̶d̶ ̶S̶i̶z̶e̶", "Keep head size constant by scaling torso"));
+                    var keepHeadSizeProp = serializedObject.FindProperty("keepHeadSize");
+                    keepHeadSizeProp.boolValue = EditorGUILayout.Toggle(
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.field_keep_head_size"), KittynLocalization.Get("immersive_scaler.deprecated_keep_head_size_tooltip")),
+                        keepHeadSizeProp.boolValue
+                    );
                     GUI.enabled = true;
                 }
                 else
@@ -518,7 +563,7 @@ namespace VRChatImmersiveScaler
                     // Extra Leg Length (Deprecated - doesn't work)
                     GUI.enabled = false;
                     parameters.extraLegLength = EditorGUILayout.FloatField(
-                        new GUIContent("̶E̶x̶t̶r̶a̶ ̶L̶e̶g̶ ̶L̶e̶n̶g̶t̶h̶", "Additional leg length below the floor"),
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.deprecated_extra_leg_length"), KittynLocalization.Get("immersive_scaler.deprecated_extra_leg_length_tooltip")),
                         parameters.extraLegLength
                     );
                     GUI.enabled = true;
@@ -526,7 +571,7 @@ namespace VRChatImmersiveScaler
                     // Scale Relative (Deprecated)
                     GUI.enabled = false;
                     parameters.scaleRelative = EditorGUILayout.Toggle(
-                        new GUIContent("̶S̶c̶a̶l̶e̶ ̶b̶y̶ ̶R̶e̶l̶a̶t̶i̶v̶e̶ ̶P̶r̶o̶p̶o̶r̶t̶i̶o̶n̶s̶", "Use relative proportions mode instead of upper body percentage"),
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.deprecated_scale_by_relative"), KittynLocalization.Get("immersive_scaler.deprecated_scale_by_relative_tooltip")),
                         parameters.scaleRelative
                     );
                     GUI.enabled = true;
@@ -534,7 +579,7 @@ namespace VRChatImmersiveScaler
                     if (parameters.scaleRelative)
                     {
                         parameters.armToLegs = EditorGUILayout.Slider(
-                            new GUIContent("Arm to Legs %", "Percentage of scaling to apply to legs (only in relative mode)"),
+                            new GUIContent(KittynLocalization.Get("immersive_scaler.arm_to_legs_percent"), KittynLocalization.Get("immersive_scaler.arm_to_legs_percent_tooltip")),
                             parameters.armToLegs, 0f, 100f
                         );
                     }
@@ -542,53 +587,66 @@ namespace VRChatImmersiveScaler
                     // Keep Head Size (Deprecated)
                     GUI.enabled = false;
                     parameters.keepHeadSize = EditorGUILayout.Toggle(
-                        new GUIContent("̶K̶e̶e̶p̶ ̶H̶e̶a̶d̶ ̶S̶i̶z̶e̶", "Keep head size constant by scaling torso"),
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.deprecated_keep_head_size"), KittynLocalization.Get("immersive_scaler.deprecated_keep_head_size_tooltip")),
                         parameters.keepHeadSize
                     );
                     GUI.enabled = true;
                 }
                 
                 EditorGUILayout.Space(5);
-                EditorGUILayout.LabelField("Debug Options", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField(KittynLocalization.Get("immersive_scaler.debug_options"), EditorStyles.boldLabel);
                 
                 if (serializedObject != null)
                 {
                     // Skip Main Rescale
-                    EditorGUILayout.PropertyField(serializedObject.FindProperty("skipMainRescale"),
-                        new GUIContent("Skip Main Rescale", "Skip proportion adjustments"));
+                    var skipMainRescaleProp = serializedObject.FindProperty("skipMainRescale");
+                    skipMainRescaleProp.boolValue = EditorGUILayout.Toggle(
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.field_skip_main_rescale"), KittynLocalization.Get("immersive_scaler.skip_main_rescale_tooltip")),
+                        skipMainRescaleProp.boolValue
+                    );
                     
                     // Skip Move to Floor
-                    EditorGUILayout.PropertyField(serializedObject.FindProperty("skipMoveToFloor"),
-                        new GUIContent("Skip Move to Floor", "Don't move avatar to Y=0"));
+                    var skipMoveToFloorProp = serializedObject.FindProperty("skipMoveToFloor");
+                    skipMoveToFloorProp.boolValue = EditorGUILayout.Toggle(
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.field_skip_move_to_floor"), KittynLocalization.Get("immersive_scaler.skip_move_to_floor_tooltip")),
+                        skipMoveToFloorProp.boolValue
+                    );
                     
                     // Skip Height Scaling
-                    EditorGUILayout.PropertyField(serializedObject.FindProperty("skipHeightScaling"),
-                        new GUIContent("Skip Height Scaling", "Don't scale to target height"));
+                    var skipHeightScalingProp = serializedObject.FindProperty("skipHeightScaling");
+                    skipHeightScalingProp.boolValue = EditorGUILayout.Toggle(
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.field_skip_height_scaling"), KittynLocalization.Get("immersive_scaler.skip_height_scaling_tooltip")),
+                        skipHeightScalingProp.boolValue
+                    );
                     
-                    EditorGUILayout.PropertyField(serializedObject.FindProperty("useBoneBasedFloorCalculation"));
+                    var useBoneBasedFloorProp = serializedObject.FindProperty("useBoneBasedFloorCalculation");
+                    useBoneBasedFloorProp.boolValue = EditorGUILayout.Toggle(
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.field_use_bone_based_floor_calculation"), KittynLocalization.Get("immersive_scaler.use_bone_based_floor_tooltip")),
+                        useBoneBasedFloorProp.boolValue
+                    );
                 }
                 else
                 {
                     // Skip Main Rescale
                     parameters.skipMainRescale = EditorGUILayout.Toggle(
-                        new GUIContent("Skip Main Rescale", "Skip proportion adjustments"),
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.skip_main_rescale"), KittynLocalization.Get("immersive_scaler.skip_main_rescale_tooltip")),
                         parameters.skipMainRescale
                     );
                     
                     // Skip Move to Floor
                     parameters.skipMoveToFloor = EditorGUILayout.Toggle(
-                        new GUIContent("Skip Move to Floor", "Don't move avatar to Y=0"),
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.skip_move_to_floor"), KittynLocalization.Get("immersive_scaler.skip_move_to_floor_tooltip")),
                         parameters.skipMoveToFloor
                     );
                     
                     // Skip Height Scaling
                     parameters.skipHeightScaling = EditorGUILayout.Toggle(
-                        new GUIContent("Skip Height Scaling", "Don't scale to target height"),
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.skip_height_scaling"), KittynLocalization.Get("immersive_scaler.skip_height_scaling_tooltip")),
                         parameters.skipHeightScaling
                     );
                     
                     parameters.useBoneBasedFloorCalculation = EditorGUILayout.Toggle(
-                        new GUIContent("Use Bone-Based Floor", "Use bone positions instead of mesh bounds for floor calculation"),
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.use_bone_based_floor"), KittynLocalization.Get("immersive_scaler.use_bone_based_floor_tooltip")),
                         parameters.useBoneBasedFloorCalculation
                     );
                 }
@@ -600,7 +658,7 @@ namespace VRChatImmersiveScaler
 
         public static void DrawAdditionalToolsSection(IParameterProvider parameters, ref bool showAdditionalTools, SerializedObject serializedObject = null)
         {
-            showAdditionalTools = EditorGUILayout.Foldout(showAdditionalTools, "Additional Tools", true);
+            showAdditionalTools = EditorGUILayout.Foldout(showAdditionalTools, KittynLocalization.Get("immersive_scaler.additional_tools"), true);
             if (showAdditionalTools)
             {
                 EditorGUI.indentLevel++;
@@ -609,53 +667,65 @@ namespace VRChatImmersiveScaler
                 // Finger Spreading
                 if (serializedObject != null)
                 {
-                    EditorGUILayout.PropertyField(serializedObject.FindProperty("applyFingerSpreading"),
-                        new GUIContent("Apply Finger Spreading", "Apply finger spreading during avatar build"));
+                    var applyFingerSpreadingProp = serializedObject.FindProperty("applyFingerSpreading");
+                    applyFingerSpreadingProp.boolValue = EditorGUILayout.Toggle(
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.field_apply_finger_spreading"), KittynLocalization.Get("immersive_scaler.tooltip_apply_finger_spreading")),
+                        applyFingerSpreadingProp.boolValue
+                    );
                     
                     if (parameters.applyFingerSpreading)
                     {
                         EditorGUI.indentLevel++;
-                        EditorGUILayout.PropertyField(serializedObject.FindProperty("fingerSpreadFactor"),
-                            new GUIContent("Spread Factor", "How much to spread fingers apart"));
-                        EditorGUILayout.PropertyField(serializedObject.FindProperty("spareThumb"),
-                            new GUIContent("Ignore Thumb", "Don't spread the thumb"));
+                        var fingerSpreadFactorProp = serializedObject.FindProperty("fingerSpreadFactor");
+                        fingerSpreadFactorProp.floatValue = EditorGUILayout.Slider(
+                            new GUIContent(KittynLocalization.Get("immersive_scaler.field_finger_spread_factor"), KittynLocalization.Get("immersive_scaler.spread_factor_tooltip")),
+                            fingerSpreadFactorProp.floatValue, 0f, 2f
+                        );
+                        var spareThumbProp = serializedObject.FindProperty("spareThumb");
+                        spareThumbProp.boolValue = EditorGUILayout.Toggle(
+                            new GUIContent(KittynLocalization.Get("immersive_scaler.field_spare_thumb"), KittynLocalization.Get("immersive_scaler.ignore_thumb_tooltip")),
+                            spareThumbProp.boolValue
+                        );
                         EditorGUI.indentLevel--;
                     }
                     
                     EditorGUILayout.Space();
                     
                     // Hip Fix
-                    EditorGUILayout.PropertyField(serializedObject.FindProperty("applyShrinkHipBone"),
-                        new GUIContent("Apply Hip Fix", "Apply hip bone fix during avatar build"));
+                    var applyShrinkHipBoneProp = serializedObject.FindProperty("applyShrinkHipBone");
+                    applyShrinkHipBoneProp.boolValue = EditorGUILayout.Toggle(
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.field_apply_shrink_hip_bone"), KittynLocalization.Get("immersive_scaler.apply_hip_fix_tooltip")),
+                        applyShrinkHipBoneProp.boolValue
+                    );
                 }
                 else
                 {
-                    EditorGUILayout.LabelField("Finger Spreading", EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField(KittynLocalization.Get("immersive_scaler.finger_spreading"), EditorStyles.boldLabel);
                     
                     parameters.spareThumb = EditorGUILayout.Toggle(
-                        new GUIContent("Ignore Thumb", "Don't spread the thumb"),
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.ignore_thumb"), KittynLocalization.Get("immersive_scaler.ignore_thumb_tooltip")),
                         parameters.spareThumb
                     );
                     
                     parameters.fingerSpreadFactor = EditorGUILayout.Slider(
-                        new GUIContent("Spread Factor", "How much to spread fingers apart"),
+                        new GUIContent(KittynLocalization.Get("immersive_scaler.spread_factor"), KittynLocalization.Get("immersive_scaler.spread_factor_tooltip")),
                         parameters.fingerSpreadFactor, 0f, 2f
                     );
                     
-                    if (GUILayout.Button("Apply Finger Spreading"))
+                    if (GUILayout.Button(KittynLocalization.Get("immersive_scaler.apply_finger_spreading")))
                     {
                         // This will be handled by the window
-                        EditorApplication.delayCall += () => Debug.Log("Apply finger spreading");
+                        EditorApplication.delayCall += () => LogDebug(KittynLocalization.Get("immersive_scaler.debug_apply_finger_spreading"));
                     }
                     
                     EditorGUILayout.Space(10);
                     
-                    EditorGUILayout.LabelField("Hip Bone Fix", EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField(KittynLocalization.Get("immersive_scaler.hip_bone_fix"), EditorStyles.boldLabel);
                     
-                    if (GUILayout.Button("Shrink Hip Bone"))
+                    if (GUILayout.Button(KittynLocalization.Get("immersive_scaler.shrink_hip_bone")))
                     {
                         // This will be handled by the window
-                        EditorApplication.delayCall += () => Debug.Log("Shrink hip bone");
+                        EditorApplication.delayCall += () => LogDebug(KittynLocalization.Get("immersive_scaler.debug_shrink_hip_bone"));
                     }
                 }
                 
@@ -686,7 +756,7 @@ namespace VRChatImmersiveScaler
             bool isActive = parameters.debugMeasurement == measurementKey;
             GUI.backgroundColor = isActive ? Color.green : Color.white;
             
-            if (GUILayout.Button(isActive ? "●" : "○", GUILayout.Width(20), GUILayout.Height(18)))
+            if (GUILayout.Button(isActive ? KittynLocalization.Get("immersive_scaler.ui_bullet_filled") : KittynLocalization.Get("immersive_scaler.ui_bullet_empty"), GUILayout.Width(20), GUILayout.Height(18)))
             {
                 // Toggle logic
                 parameters.debugMeasurement = isActive ? "" : measurementKey;
@@ -727,7 +797,7 @@ namespace VRChatImmersiveScaler
             GUILayout.Space(5);
             bool isActive = parameters.debugMeasurement == measurementKey;
             GUI.backgroundColor = isActive ? Color.green : Color.white;
-            if (GUILayout.Button(isActive ? "●" : "○", GUILayout.Width(20), GUILayout.Height(18)))
+            if (GUILayout.Button(isActive ? KittynLocalization.Get("immersive_scaler.ui_bullet_filled") : KittynLocalization.Get("immersive_scaler.ui_bullet_empty"), GUILayout.Width(20), GUILayout.Height(18)))
             {
                 parameters.debugMeasurement = isActive ? "" : measurementKey;
                 parameters.SetDirty();
@@ -774,7 +844,7 @@ namespace VRChatImmersiveScaler
             // Target Height button
             bool isTargetHeight = parameters.targetHeightMethod == heightType;
             GUI.backgroundColor = isTargetHeight ? Color.green : Color.white;
-            if (GUILayout.Button("Target Height", GUILayout.Width(90)))
+            if (GUILayout.Button(KittynLocalization.Get("immersive_scaler.btn_target_height"), GUILayout.Width(90)))
             {
                 parameters.targetHeightMethod = heightType;
                 parameters.SetDirty();
@@ -786,7 +856,7 @@ namespace VRChatImmersiveScaler
             // Arm Ratio button
             bool isArmHeight = parameters.armToHeightHeightMethod == heightType;
             GUI.backgroundColor = isArmHeight ? Color.green : Color.white;
-            if (GUILayout.Button("Arm Ratio", GUILayout.Width(70)))
+            if (GUILayout.Button(KittynLocalization.Get("immersive_scaler.btn_arm_ratio"), GUILayout.Width(70)))
             {
                 parameters.armToHeightHeightMethod = heightType;
                 parameters.SetDirty();
@@ -801,7 +871,7 @@ namespace VRChatImmersiveScaler
             // Arm Ratio button
             bool isSelected = parameters.armToHeightRatioMethod == armType;
             GUI.backgroundColor = isSelected ? Color.green : Color.white;
-            if (GUILayout.Button("Arm Ratio", GUILayout.Width(70)))
+            if (GUILayout.Button(KittynLocalization.Get("immersive_scaler.btn_arm_ratio"), GUILayout.Width(70)))
             {
                 parameters.armToHeightRatioMethod = armType;
                 parameters.SetDirty();
@@ -816,7 +886,7 @@ namespace VRChatImmersiveScaler
             {
                 bool isSelected = parameters.upperBodyUseLegacy;
                 GUI.backgroundColor = isSelected ? Color.green : Color.white;
-                if (GUILayout.Button("Upper Body", GUILayout.Width(90)))
+                if (GUILayout.Button(KittynLocalization.Get("immersive_scaler.btn_upper_body"), GUILayout.Width(90)))
                 {
                     parameters.upperBodyUseLegacy = true;
                     parameters.SetDirty();
@@ -829,7 +899,7 @@ namespace VRChatImmersiveScaler
                 bool useNeck = measurementKey.Contains("neck");
                 bool isSelected = parameters.upperBodyUseNeck == useNeck && !parameters.upperBodyUseLegacy;
                 GUI.backgroundColor = isSelected ? Color.green : Color.white;
-                if (GUILayout.Button("Upper Body Height", GUILayout.Width(120)))
+                if (GUILayout.Button(KittynLocalization.Get("immersive_scaler.btn_upper_body_height"), GUILayout.Width(120)))
                 {
                     parameters.upperBodyUseNeck = useNeck;
                     parameters.upperBodyUseLegacy = false;
@@ -843,7 +913,7 @@ namespace VRChatImmersiveScaler
                 bool useNeck = measurementKey.Contains("neck");
                 bool isSelected = parameters.upperBodyTorsoUseNeck == useNeck && !parameters.upperBodyUseLegacy;
                 GUI.backgroundColor = isSelected ? Color.green : Color.white;
-                if (GUILayout.Button("Torso Length", GUILayout.Width(90)))
+                if (GUILayout.Button(KittynLocalization.Get("immersive_scaler.btn_torso_length"), GUILayout.Width(90)))
                 {
                     parameters.upperBodyTorsoUseNeck = useNeck;
                     parameters.upperBodyUseLegacy = false;
@@ -899,7 +969,7 @@ namespace VRChatImmersiveScaler
                 case "current_height":
                 case "total_height":
                     {
-                        float lowest = scalerCore.GetLowestPoint();
+                        float lowest = scalerCore.GetLowestPoint(parameters.useBoneBasedFloorCalculation);
                         float highest = scalerCore.GetHighestPoint();
                         Vector3 start = new Vector3(0, lowest, 0);
                         Vector3 end = new Vector3(0, highest, 0);
@@ -910,7 +980,7 @@ namespace VRChatImmersiveScaler
                 case "eye_height":
                 case "eye_height_debug":
                     {
-                        float lowest = scalerCore.GetLowestPoint();
+                        float lowest = scalerCore.GetLowestPoint(parameters.useBoneBasedFloorCalculation);
                         Vector3 start = new Vector3(0, lowest, 0);
                         Vector3 end = new Vector3(0, scalerCore.GetEyeHeight(), 0);
                         DrawHandlesLine(start, end, Color.green);
@@ -946,7 +1016,7 @@ namespace VRChatImmersiveScaler
                             if (leftLeg != null && rightLeg != null)
                             {
                                 float legY = (leftLeg.position.y + rightLeg.position.y) / 2f;
-                                float lowest = scalerCore.GetLowestPoint();
+                                float lowest = scalerCore.GetLowestPoint(parameters.useBoneBasedFloorCalculation);
                                 
                                 // Draw torso measurement (green)
                                 if (parameters.upperBodyTorsoUseNeck && neck != null)
@@ -983,7 +1053,7 @@ namespace VRChatImmersiveScaler
                         DrawMeasurementWithHandles(GetMeasurementKeyForArmType(parameters.armToHeightRatioMethod), scalerCore, parameters, avatar);
                         
                         // Then draw the height measurement
-                        float lowest = scalerCore.GetLowestPoint();
+                        float lowest = scalerCore.GetLowestPoint(parameters.useBoneBasedFloorCalculation);
                         if (parameters.armToHeightHeightMethod == HeightMethodType.EyeHeight)
                         {
                             DrawHandlesLine(new Vector3(0.1f, lowest, 0), new Vector3(0.1f, scalerCore.GetEyeHeight(), 0), Color.blue);
@@ -1123,7 +1193,7 @@ namespace VRChatImmersiveScaler
                         var neck = scalerCore.GetBone(HumanBodyBones.Neck);
                         if (neck != null)
                         {
-                            float lowest = scalerCore.GetLowestPoint();
+                            float lowest = scalerCore.GetLowestPoint(parameters.useBoneBasedFloorCalculation);
                             Vector3 start = new Vector3(neck.position.x, lowest, neck.position.z);
                             DrawHandlesLine(start, neck.position, Color.green);
                         }
@@ -1133,8 +1203,8 @@ namespace VRChatImmersiveScaler
                 case "head_height":
                     {
                         // Draw from floor to head bone position
-                        float lowest = scalerCore.GetLowestPoint();
-                        float headHeight = scalerCore.GetFloorToHeadHeight();
+                        float lowest = scalerCore.GetLowestPoint(parameters.useBoneBasedFloorCalculation);
+                        float headHeight = scalerCore.GetFloorToHeadHeight(parameters.useBoneBasedFloorCalculation);
                         Vector3 start = new Vector3(0, lowest, 0);
                         Vector3 end = new Vector3(0, lowest + headHeight, 0);
                         DrawHandlesLine(start, end, Color.green);
@@ -1184,7 +1254,7 @@ namespace VRChatImmersiveScaler
                             DrawHandlesLine(new Vector3(0, legY, 0), new Vector3(0, eyeY, 0), Color.green);
                         }
                         // Draw full eye height in blue
-                        float lowest = scalerCore.GetLowestPoint();
+                        float lowest = scalerCore.GetLowestPoint(parameters.useBoneBasedFloorCalculation);
                         DrawHandlesLine(new Vector3(0.1f, lowest, 0), new Vector3(0.1f, scalerCore.GetEyeHeight(), 0), Color.blue);
                     }
                     break;
