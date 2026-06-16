@@ -638,8 +638,8 @@ namespace VRChatImmersiveScaler.Editor
                 component.measurementHeadRenderers
             );
 
-            // Measure original eye position
-            Vector3 originalEyeLocalPos = scalerCore.GetEyePositionLocal();
+            // Store original avatar scale before any modifications
+            Vector3 originalAvatarScale = avatar.transform.localScale;
 
             var parameters = new ScalingParameters
             {
@@ -672,11 +672,14 @@ namespace VRChatImmersiveScaler.Editor
 
             scalerCore.ScaleAvatar(parameters);
 
-            Vector3 newEyeLocalPos = scalerCore.GetEyePositionLocal();
+            // Scale ViewPosition proportionally with root scale change.
+            // VRChat normalizes root scale to 1 on upload, so ViewPosition must be
+            // scaled by the same ratio to remain at the correct eye height post-bake.
+            Vector3 newAvatarScale = avatar.transform.localScale;
+            float scaleRatio = newAvatarScale.y / originalAvatarScale.y;
             if (!component.skipMainRescale || !component.skipHeightScaling)
             {
-                // Preserve intentional ViewPosition offset from eye bones in preview.
-                avatar.ViewPosition = newEyeLocalPos + (storedOriginalViewPosition - originalEyeLocalPos);
+                avatar.ViewPosition = storedOriginalViewPosition * scaleRatio;
             }
 
             // Apply additional tools if enabled

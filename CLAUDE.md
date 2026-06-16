@@ -55,10 +55,15 @@ VRChat Immersive Scaler is a Unity Editor tool that scales VRChat avatars to mat
 
 The tool automatically adjusts VRChat's ViewPosition after scaling:
 1. Reads the descriptor ViewPosition at preview/build start
-2. Measures original local eye position before scaling
+2. Stores the original avatar root scale before ScaleAvatar runs
 3. Applies scaling transformations
-4. Measures the final local eye position
-5. Updates VRCAvatarDescriptor.ViewPosition while preserving the user's original descriptor offset from the eye bones
+4. Computes `scaleRatio = newRootScale.y / originalRootScale.y`
+5. Sets `ViewPosition = originalViewPosition * scaleRatio`
+
+This proportional approach is correct because VRChat normalizes the avatar root scale to 1
+on upload (baking all bone positions × rootScale into world-scale units). ViewPosition is
+NOT automatically scaled during this bake, so it must be scaled proportionally to remain
+at the correct eye height in the baked (scale = 1) reference frame.
 
 ### Testing Workflow
 

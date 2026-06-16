@@ -54,8 +54,8 @@ namespace VRChatImmersiveScaler.Editor
                         component.measurementHeadRenderers
                     );
                     
-                    // Measure original eye height and position
-                    Vector3 originalEyeLocalPos = scalerCore.GetEyePositionLocal();
+                    // Store original avatar scale before any modifications
+                    Vector3 originalAvatarScale = ctx.AvatarRootTransform.localScale;
                     
                     // Create parameters from component
                     var parameters = new ScalingParameters
@@ -90,14 +90,16 @@ namespace VRChatImmersiveScaler.Editor
                     // Apply scaling
                     scalerCore.ScaleAvatar(parameters);
                     
-                    // Measure new eye position after scaling
-                    Vector3 newEyeLocalPos = scalerCore.GetEyePositionLocal();
+                    // Calculate the actual scale ratio applied to the avatar root.
+                    // VRChat normalizes root scale to 1 on upload (baking bone positions × rootScale).
+                    // ViewPosition is NOT automatically scaled during baking, so we must scale it
+                    // proportionally with the root scale change to keep it at the correct eye height.
+                    Vector3 newAvatarScale = ctx.AvatarRootTransform.localScale;
+                    float scaleRatio = newAvatarScale.y / originalAvatarScale.y;
                     
                     if (!component.skipMainRescale || !component.skipHeightScaling)
                     {
-                        // Preserve any intentional ViewPosition offset from eye bones while using
-                        // the measured final local eye position instead of root-scale approximation.
-                        Vector3 newViewPosition = newEyeLocalPos + (buildStartViewPosition - originalEyeLocalPos);
+                        Vector3 newViewPosition = buildStartViewPosition * scaleRatio;
                         
                         descriptor.ViewPosition = newViewPosition;
                         EditorUtility.SetDirty(descriptor);
@@ -107,8 +109,7 @@ namespace VRChatImmersiveScaler.Editor
                         LogDebug($"ImmersiveScaler: ViewPosition Update Details:");
                         LogDebug($"  Original ViewPosition: {buildStartViewPosition}");
                         LogDebug($"  New ViewPosition: {newViewPosition}");
-                        LogDebug($"  Eye Position (Local Space) - Before: {originalEyeLocalPos}, After: {newEyeLocalPos}");
-                        LogDebug($"  Eye Movement Delta (Local): {newEyeLocalPos - originalEyeLocalPos}");
+                        LogDebug($"  Scale ratio applied: {scaleRatio}");
 #endif
                     }
                     
